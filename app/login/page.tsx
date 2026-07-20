@@ -19,7 +19,6 @@ export default function LoginPage() {
     <main className="login-wrap">
       <section className="panel login-card">
         <h1 className="page-title">Admin Login</h1>
-        <p className="muted">Use the single admin account you created in Supabase Auth.</p>
         <LoginForm />
       </section>
     </main>
