@@ -7,6 +7,9 @@ create table if not exists public.scan_logs (
   qr_value text
 );
 
+alter table public.scan_logs
+  add column if not exists qr_value text;
+
 alter table public.scan_logs enable row level security;
 
 drop policy if exists "Authenticated users can read scan logs" on public.scan_logs;

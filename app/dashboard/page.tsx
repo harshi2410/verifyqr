@@ -1,17 +1,24 @@
 "use client";
 
 import { ExportButton } from "@/components/ExportButton";
+import { DailyReport } from "@/components/dashboard/DailyReport";
+import { FraudPanel } from "@/components/dashboard/FraudPanel";
 import { RecentScans } from "@/components/dashboard/RecentScans";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ProtectedShell } from "@/components/Navbar";
-import { getRecentScans, getScanCount } from "@/services/scanService";
-import type { ScanLog } from "@/types/scan";
+import { getRecentFraudLogs } from "@/services/fraudService";
+import { buildDailyReport, getFraudStatus, getStartOfToday, getStartOfWeek } from "@/services/reportService";
+import { getRecentScans, getScanCount, getScansSince } from "@/services/scanService";
+import type { FraudLog, ScanLog } from "@/types/scan";
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const [count, setCount] = useState(0);
   const [scans, setScans] = useState<ScanLog[]>([]);
+  const [todayScans, setTodayScans] = useState<ScanLog[]>([]);
+  const [weekScans, setWeekScans] = useState<ScanLog[]>([]);
+  const [fraudLogs, setFraudLogs] = useState<FraudLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -19,9 +26,18 @@ export default function DashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextCount, nextScans] = await Promise.all([getScanCount(), getRecentScans(50)]);
+      const [nextCount, nextScans, nextTodayScans, nextWeekScans, nextFraudLogs] = await Promise.all([
+        getScanCount(),
+        getRecentScans(20),
+        getScansSince(getStartOfToday()),
+        getScansSince(getStartOfWeek()),
+        getRecentFraudLogs(20),
+      ]);
       setCount(nextCount);
       setScans(nextScans);
+      setTodayScans(nextTodayScans);
+      setWeekScans(nextWeekScans);
+      setFraudLogs(nextFraudLogs);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load dashboard.");
     } finally {
@@ -33,13 +49,9 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
-  const todayCount = scans.filter((scan) => {
-    const scanDate = new Date(scan.created_at);
-    const now = new Date();
-    return scanDate.toDateString() === now.toDateString();
-  }).length;
-  const lastHourCount = scans.filter((scan) => Date.now() - new Date(scan.created_at).getTime() <= 60 * 60 * 1000).length;
   const latestScan = scans[0] ? new Date(scans[0].created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "None";
+  const fraudStatus = getFraudStatus(fraudLogs);
+  const dailyReport = buildDailyReport(todayScans, fraudLogs);
 
   return (
     <ProtectedShell>
@@ -60,14 +72,16 @@ export default function DashboardPage() {
       {error ? <p className="error">{error}</p> : null}
       <div className="grid">
         <StatsCard label="Total Verifications" value={loading ? "..." : count} />
-        <StatsCard label="Today" value={loading ? "..." : todayCount} />
-        <StatsCard label="Last Hour" value={loading ? "..." : lastHourCount} />
+        <StatsCard label="Today's Verifications" value={loading ? "..." : todayScans.length} />
+        <StatsCard label="This Week" value={loading ? "..." : weekScans.length} />
       </div>
       <div className="grid analytics-grid">
-        <StatsCard label="History Loaded" value={loading ? "..." : scans.length} />
         <StatsCard label="Latest Scan" value={loading ? "..." : latestScan} />
+        <StatsCard label="Fraud Status" value={loading ? "..." : fraudStatus} />
         <StatsCard label="CSV Export" value="Ready" />
       </div>
+      <DailyReport report={dailyReport} />
+      <FraudPanel status={fraudStatus} fraudLogs={fraudLogs} />
       <RecentScans scans={scans} />
     </ProtectedShell>
   );

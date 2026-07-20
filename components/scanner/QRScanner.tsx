@@ -24,9 +24,29 @@ declare global {
 
 type ScanState = "ready" | "processing" | "verified" | "invalid" | "error" | "warning" | "critical";
 
+function playTone(kind: "success" | "error") {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  const context = new AudioContextClass();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const now = context.currentTime;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(kind === "success" ? 880 : 180, now);
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.24);
+}
+
 function playSound(kind: "success" | "error") {
   const audio = new Audio(kind === "success" ? "/success.mp3" : "/error.mp3");
-  audio.play().catch(() => undefined);
+  audio.play().catch(() => playTone(kind));
 }
 
 export function QRScanner({ count, onCountChange }: { count: number | null; onCountChange: (count: number) => void }) {

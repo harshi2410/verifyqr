@@ -8,16 +8,16 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("scan_logs")
-    .select("id, created_at, verified_by, user_email, source")
+    .select("id, created_at, verified_by, user_email, source, qr_value")
     .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
 
-  const header = ["id", "created_at", "verified_by", "user_email", "source"];
+  const header = ["id", "created_at", "verified_by", "user_email", "source", "qr_value"];
   const rows = (data ?? []).map((row) =>
-    [row.id, row.created_at, row.verified_by, row.user_email, row.source].map(csvEscape).join(","),
+    [row.id, row.created_at, row.verified_by, row.user_email, row.source, row.qr_value].map(csvEscape).join(","),
   );
 
   return new NextResponse([header.join(","), ...rows].join("\n"), {
