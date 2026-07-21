@@ -3,7 +3,8 @@
 import { APP_NAME, MASTER_QR } from "@/config/constants";
 import { verifyScan } from "@/services/verifyService";
 import { CheckCircle2, Loader2, QrCode, XCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { Scanner } from "@yudiel/react-qr-scanner";
 
 type BarcodeResult = {
   rawValue: string;
@@ -50,8 +51,6 @@ function playSound(kind: "success" | "error") {
 }
 
 export function QRScanner({ count, onCountChange }: { count: number | null; onCountChange: (count: number) => void }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const lastVisibleQrRef = useRef<string | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
   const [state, setState] = useState<ScanState>("ready");
@@ -71,63 +70,6 @@ export function QRScanner({ count, onCountChange }: { count: number | null; onCo
     }, 1000);
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    let animationFrame = 0;
-
-    async function startCamera() {
-      const BarcodeDetector = window.BarcodeDetector;
-
-      if (!BarcodeDetector) {
-        setState("error");
-        setMessage("This browser cannot scan QR codes. Use Chrome or Edge.");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
-
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        const detector = new BarcodeDetector({ formats: ["qr_code"] });
-
-        async function scanFrame() {
-          if (cancelled || !videoRef.current) return;
-
-          if (videoRef.current.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-            const results = await detector.detect(videoRef.current).catch(() => []);
-            const value = results[0]?.rawValue;
-
-            if (!value) {
-              lastVisibleQrRef.current = null;
-            } else if (value !== lastVisibleQrRef.current) {
-              lastVisibleQrRef.current = value;
-              verifyQr(value);
-            }
-          }
-
-          animationFrame = requestAnimationFrame(scanFrame);
-        }
-
-        scanFrame();
-      } catch (err) {
-        setState("error");
-        setMessage(err instanceof Error ? err.message : "Camera permission was blocked.");
-      }
-    }
-
     async function verifyQr(value: string) {
       if (value !== MASTER_QR) {
         playSound("error");
@@ -140,25 +82,19 @@ export function QRScanner({ count, onCountChange }: { count: number | null; onCo
 
       try {
         const result = await verifyScan(value);
+        const messages = {normal: "VERIFIED",
+                          warning: "WARNING",
+                          critical: "FRAUD DETECTED"};
         onCountChange(result.count);
         playSound("success");
         navigator.vibrate?.(200);
-        showFeedback(result.fraud.severity === "normal" ? "verified" : result.fraud.severity, "VERIFIED");
+        showFeedback(result.fraud.severity === "normal" ? "verified" : result.fraud.severity,  messages[result.fraud.severity]);
       } catch (err) {
         playSound("error");
         showFeedback("error", err instanceof Error ? err.message : "Verification failed.");
       }
     }
 
-    startCamera();
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(animationFrame);
-      if (feedbackTimeoutRef.current) window.clearTimeout(feedbackTimeoutRef.current);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-  }, [onCountChange]);
 
   return (
     <section className="scanner-screen">
@@ -174,7 +110,38 @@ export function QRScanner({ count, onCountChange }: { count: number | null; onCo
       </header>
 
       <div className="camera-frame">
-        <video ref={videoRef} playsInline muted className="camera-video" />
+        <Scanner
+    constraints={{
+        facingMode: "environment"
+    }}
+    onScan={(results)=>{
+
+        if(!results.length){
+            lastVisibleQrRef.current=null;
+            return;
+        }
+
+        const value=results[0].rawValue;
+
+        if(value===lastVisibleQrRef.current){
+            return;
+        }
+
+        lastVisibleQrRef.current=value;
+
+        verifyQr(value);
+
+    }}
+    onError={(error)=>{
+
+        setState("error");
+        setMessage(error?.message ?? "Unable to access camera.");
+
+    }}
+    classNames={{
+        container:"camera-video"
+    }}
+/>
         <div className={`scan-overlay ${state}`} />
         <div className={`scan-feedback ${state}`}>
           {state === "processing" ? <Loader2 size={72} /> : state === "verified" || state === "warning" || state === "critical" ? <CheckCircle2 size={86} /> : state === "invalid" || state === "error" ? <XCircle size={86} /> : <QrCode size={40} />}
