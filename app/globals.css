@@ -571,3 +571,96 @@ th {
   color: #7f8b96;
   font-size: .9rem;
 }
+
+/* ===========================
+   Scanner Layout v2
+=========================== */
+
+.scanner-layout {
+  min-height: 100vh;
+  background: #071114;
+  color: white;
+}
+
+.scanner-topbar {
+  height: 82px;
+  padding: 18px 26px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid rgba(255,255,255,.08);
+
+  background: #0d1822;
+}
+
+.scanner-brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.scanner-brand h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.scanner-brand span {
+  color: #8aa2b2;
+  font-size: 14px;
+}
+
+.scanner-user {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.scanner-user p {
+  margin: 4px 0 0;
+  color: white;
+  font-size: 14px;
+}
+
+.online-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #ef4444;
+  color: white;
+
+  padding: 10px 16px;
+
+  cursor: pointer;
+  transition: .2s;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+
+.scanner-content{
+    height:calc(100vh - 82px);
+}
