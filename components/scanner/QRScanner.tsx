@@ -7,6 +7,7 @@ import ScanResult from './ScanResult';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { ExportButton } from '@/components/ExportButton';
 
 export default function QRScanner() {
   const [result, setResult] = useState<'success' | 'error' | null>(null);
@@ -89,16 +90,19 @@ export default function QRScanner() {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <span>VerifyQR</span>
+          <span>FlearaasQR</span>
         </div>
-        <button className="scanner-logout-btn" onClick={handleSignOut}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span>Sign Out</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <ExportButton />
+          <button className="scanner-logout-btn" onClick={handleSignOut}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
 
       {/* Camera area */}
