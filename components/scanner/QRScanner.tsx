@@ -1,246 +1,145 @@
-"use client";
+'use client';
 
-import { APP_NAME, MASTER_QR } from "@/config/constants";
-import { verifyScan } from "@/services/verifyService";
-import { CheckCircle2, Loader2, QrCode, XCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import { verifyScan } from '@/services/verifyService';
+import ScanResult from './ScanResult';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 
-type BarcodeResult = {
-  rawValue: string;
-};
-
-type BarcodeDetectorLike = {
-  detect: (source: HTMLVideoElement) => Promise<BarcodeResult[]>;
-};
-
-type BarcodeDetectorConstructor = new (
-  options?: { formats?: string[] }
-) => BarcodeDetectorLike;
-
-declare global {
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor;
-    webkitAudioContext?: typeof AudioContext;
-  }
-}
-
-type ScanState =
-  | "ready"
-  | "processing"
-  | "verified"
-  | "invalid"
-  | "error"
-  | "warning"
-  | "critical";
-
-function playTone(kind: "success" | "error") {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return;
-
-  const context = new AudioContextClass();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-
-  const now = context.currentTime;
-
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(
-    kind === "success" ? 880 : 180,
-    now
-  );
-
-  gain.gain.setValueAtTime(0.001, now);
-  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-
-  oscillator.start(now);
-  oscillator.stop(now + 0.24);
-}
-
-function playSound(kind: "success" | "error") {
-  const audio = new Audio(
-    kind === "success" ? "/success.mp3" : "/error.mp3"
-  );
-
-  audio.play().catch(() => playTone(kind));
-}
-
-export function QRScanner({
-  count,
-  onCountChange,
-}: {
-  count: number | null;
-  onCountChange: (count: number) => void;
-}) {
-  const lastVisibleQrRef = useRef<string | null>(null);
-  const processingRef = useRef(false);
-  const resetTimerRef = useRef<number | null>(null);
-  const feedbackTimeoutRef = useRef<number | null>(null);
-
-  const [state, setState] = useState<ScanState>("ready");
-  const [message, setMessage] = useState(
-    "Point the camera at the master QR."
-  );
-
-  function showFeedback(nextState: ScanState, nextMessage: string) {
-    setState(nextState);
-    setMessage(nextMessage);
-
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
-    }
-
-    feedbackTimeoutRef.current = window.setTimeout(() => {
-      setState("ready");
-      setMessage("Ready for next scan");
-
-      processingRef.current = false;
-
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-      }
-
-      resetTimerRef.current = window.setTimeout(() => {
-        lastVisibleQrRef.current = null;
-      }, 300);
-    }, 1500);
-  }
-
-  async function verifyQr(value: string) {
-    if (processingRef.current) return;
-
-    processingRef.current = true;
-
-    if (value !== MASTER_QR) {
-      playSound("error");
-      showFeedback("invalid", "INVALID QR");
-      return;
-    }
-
-    setState("processing");
-    setMessage("Checking QR...");
-
-    try {
-      const result = await verifyScan(value);
-
-      const messages = {
-        normal: "VERIFIED",
-        warning: "WARNING",
-        critical: "FRAUD DETECTED",
-      };
-
-      onCountChange(result.count);
-
-      playSound("success");
-
-      navigator.vibrate?.(200);
-
-      showFeedback(
-        result.fraud.severity === "normal"
-          ? "verified"
-          : result.fraud.severity,
-        messages[result.fraud.severity]
-      );
-    } catch (err) {
-      playSound("error");
-
-      showFeedback(
-        "error",
-        err instanceof Error
-          ? err.message
-          : "Verification failed."
-      );
-    }
-  }
+export default function QRScanner() {
+  const [result, setResult] = useState<'success' | 'error' | null>(null);
+  const [count, setCount] = useState<number>(0);
+  const [scanning, setScanning] = useState<boolean>(true);
+  
+  const audioSuccess = useRef<HTMLAudioElement | null>(null);
+  const audioError = useRef<HTMLAudioElement | null>(null);
+  
+  const { signOut } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    return () => {
-      if (feedbackTimeoutRef.current) {
-        clearTimeout(feedbackTimeoutRef.current);
-      }
-
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
+    const fetchCount = async () => {
+      try {
+        const { count: total } = await supabase
+          .from('scan_logs')
+          .select('*', { count: 'exact', head: true });
+        setCount(total ?? 0);
+      } catch (error) {
+        console.error('Failed to fetch count', error);
       }
     };
+    fetchCount();
   }, []);
 
+  const handleScan = useCallback(async (text: string) => {
+    if (!scanning) return;
+    setScanning(false);
+
+    const scannedData = text.trim();
+    const origin = window.location.origin;
+    const originWithSlash = origin + '/';
+
+    if (scannedData === origin || scannedData === originWithSlash) {
+      try {
+        const { count: newCount } = await verifyScan(scannedData);
+        setCount(newCount);
+        setResult('success');
+        if (audioSuccess.current) {
+          audioSuccess.current.currentTime = 0;
+          audioSuccess.current.play().catch(e => console.error('Audio play failed', e));
+        }
+      } catch (error) {
+        console.error('Scan verify failed', error);
+        setResult('error');
+        if (audioError.current) {
+          audioError.current.currentTime = 0;
+          audioError.current.play().catch(e => console.error('Audio play failed', e));
+        }
+      }
+    } else {
+      setResult('error');
+      if (audioError.current) {
+        audioError.current.currentTime = 0;
+        audioError.current.play().catch(e => console.error('Audio play failed', e));
+      }
+    }
+
+    setTimeout(() => {
+      setResult(null);
+      setScanning(true);
+    }, 2500);
+  }, [scanning]);
+
+  const handleSignOut = () => {
+    signOut();
+    router.push('/');
+  };
+
   return (
-  <section className="scanner-screen">
-    <div className="scanner-dashboard">
+    <div className="scanner-fullscreen">
+      {/* Hidden audio elements */}
+      <audio ref={audioSuccess} src="/success.mp3" preload="auto" />
+      <audio ref={audioError} src="/error.mp3" preload="auto" />
 
-      {/* Camera Section */}
-      <div className="camera-section">
-        <div className="camera-frame">
+      {/* Top bar */}
+      <div className="scanner-topbar">
+        <div className="scanner-brand">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>VerifyQR</span>
+        </div>
+        <button className="scanner-logout-btn" onClick={handleSignOut}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      {/* Camera area */}
+      <div className="scanner-camera-area">
+        <div className="scanner-viewfinder">
+          {/* Corner brackets */}
+          <div className="scanner-corner scanner-corner-tl" />
+          <div className="scanner-corner scanner-corner-tr" />
+          <div className="scanner-corner scanner-corner-bl" />
+          <div className="scanner-corner scanner-corner-br" />
+          
+          {/* Animated scan line */}
+          <div className="scanner-line" />
+          
+          {/* The actual scanner component */}
           <Scanner
-            constraints={{
-              facingMode: "environment",
-            }}
             onScan={(results) => {
-              if (!results.length) return;
-
-              if (processingRef.current) return;
-
-              const value = results[0].rawValue;
-
-              if (!value) return;
-
-              if (value === lastVisibleQrRef.current) return;
-
-              lastVisibleQrRef.current = value;
-
-              verifyQr(value);
+              const text = results?.[0]?.rawValue;
+              if (text) handleScan(text);
             }}
-            onError={(error) => {
-              setState("error");
-              setMessage(error?.message ?? "Unable to access camera.");
-            }}
-            classNames={{
-              container: "camera-video",
-            }}
+            allowMultiple
+            scanDelay={1000}
+            styles={{ container: { width: '100%', height: '100%' }, video: { objectFit: 'cover' } }}
           />
-
-          <div className={`scan-overlay ${state}`} />
-
-          <div className={`scan-feedback ${state}`}>
-            {state === "processing" ? (
-              <Loader2 size={70} />
-            ) : state === "verified" ||
-              state === "warning" ||
-              state === "critical" ? (
-              <CheckCircle2 size={90} />
-            ) : state === "invalid" ||
-              state === "error" ? (
-              <XCircle size={90} />
-            ) : (
-              <QrCode size={42} />
-            )}
-
-            <h2>{message}</h2>
-          </div>
         </div>
       </div>
 
-      {/* Bottom Cards */}
-      <div className="scanner-info">
-
-        <div className="info-card">
-          <span>Total Verified</span>
-          <strong>{count ?? "--"}</strong>
+      {/* Bottom info bar */}
+      <div className="scanner-bottom">
+        <div className="scanner-counter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span>{count} Verified</span>
         </div>
-
-        <div className={`info-card status ${state}`}>
-          <span>Scanner Status</span>
-          <strong>{message}</strong>
-        </div>
-
+        <p className="scanner-hint">Point camera at QR code to verify</p>
       </div>
 
+      {/* Scan result overlay */}
+      {result && <ScanResult type={result} />}
     </div>
-  </section>
-)
+  );
 }

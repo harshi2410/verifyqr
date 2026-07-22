@@ -1,26 +1,30 @@
-"use client";
+'use client';
 
-import { LoginForm } from "@/components/LoginForm";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import LoginForm from '@/components/LoginForm';
+import '@/styles/landing.css';
 
 export default function LoginPage() {
-  const { loading, session } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && session) {
-      router.replace("/scanner");
+    if (user) {
+      router.push('/scanner');
     }
-  }, [loading, router, session]);
+  }, [user, router]);
 
   return (
-    <main className="login-wrap">
-      <section className="panel login-card">
-        <h1 className="page-title">Admin Login</h1>
-        <LoginForm />
-      </section>
-    </main>
+    <div className="landing-page">
+      <button 
+        className="login-back-btn" 
+        onClick={() => router.push('/')}
+      >
+        &larr; Back
+      </button>
+      <LoginForm />
+    </div>
   );
 }

@@ -1,2 +1,3 @@
-export const APP_NAME = "Verification Portal";
-export const MASTER_QR = "bdksn439840394r-2473847fwjekf-3948fn";
+// QR verification now uses window.location.origin instead of a static secret.
+// The Master QR contains only the deployed URL.
+export {};
