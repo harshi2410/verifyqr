@@ -2,6 +2,11 @@ import { AuthProvider } from "@/context/AuthContext";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+import "../styles/sidebar.css";
+import "../styles/scanner.css";
+import "../styles/dashboard.css";
+import "../styles/landing.css";
+
 export const metadata: Metadata = {
   title: "VerifyQR",
   description: "Professional QR verification scanner",

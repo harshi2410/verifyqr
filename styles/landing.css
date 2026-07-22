@@ -1,0 +1,5 @@
+
+.landing-page{min-height:100vh;background:linear-gradient(180deg,#071114,#0f1720);display:flex;align-items:center;justify-content:center;padding:24px}
+.landing-card{width:min(450px,100%);background:#111c26;border-radius:22px;padding:40px;text-align:center;border:1px solid #233240;color:#fff}
+.logo-circle{width:74px;height:74px;border-radius:50%;margin:auto;background:#17c964;color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px}
+.subtitle{color:#3ecf8e}.description{color:#aeb7c2;line-height:1.7}

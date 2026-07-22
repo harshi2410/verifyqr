@@ -1,0 +1,7 @@
+
+.analytics-grid,.report-grid{display:grid;gap:16px}
+.analytics-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.report-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.status-pill{padding:6px 10px;border-radius:999px;color:#fff;font-weight:700}
+.status-pill.normal{background:#12805c}.status-pill.warning{background:#d97706}.status-pill.critical{background:#b42318}
+@media(max-width:760px){.analytics-grid{grid-template-columns:1fr}.report-grid{grid-template-columns:repeat(2,1fr)}}
