@@ -38,12 +38,12 @@ export default function QRScanner() {
     if (!scanning) return;
     setScanning(false);
 
-    const scannedData = text.trim();
-    const origin = window.location.origin;
+    const scannedData = text.trim().replace(/\/$/, "");
+    const expected = process.env.NEXT_PUBLIC_MASTER_QR!.replace(/\/$/, "");
     const originWithSlash = origin + '/';
     console.log("SCANNED QR:", scannedData);
-    console.log("EXPECTED:", origin);
-    if (scannedData === origin || scannedData === originWithSlash) {
+    console.log("EXPECTED:", expected);
+    if (scannedData === expected) {
       try {
         const { count: newCount } = await verifyScan(scannedData);
         setCount(newCount);
