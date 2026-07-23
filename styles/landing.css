@@ -135,9 +135,11 @@
   transition: all 0.25s ease;
 }
 
-.landing-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.5);
+.landing-login-btn:hover {
+  background: #ffffff;
+  color: #071114;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255,255,255,0.18);
 }
 
 .landing-btn:active {
