@@ -19,7 +19,7 @@ export default function LoginForm() {
 
     try {
       await signIn(email, password);
-      router.push("/scanner");
+      router.replace("/scanner");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
       setLoading(false);

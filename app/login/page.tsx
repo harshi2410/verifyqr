@@ -7,23 +7,28 @@ import LoginForm from '@/components/LoginForm';
 import '@/styles/landing.css';
 
 export default function LoginPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      router.push('/scanner');
+    if (!loading && user) {
+      router.replace('/scanner');
     }
-  }, [user, router]);
+  }, [loading, user, router]);
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <div className="landing-page">
-      <button 
-        className="login-back-btn" 
+      <button
+        className="login-back-btn"
         onClick={() => router.push('/')}
       >
-        &larr; Back
+        ← Back
       </button>
+
       <LoginForm />
     </div>
   );
