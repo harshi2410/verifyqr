@@ -14,10 +14,7 @@ export default function Home() {
         <p className="subtitle">
           Secure QR Verification Platform
         </p>
-
-        <p className="description">
-          Only authorized administrators can verify tickets.
-        </p>
+        
 
         <Link href="/login" className="button">
           Admin Login
