@@ -43,6 +43,7 @@ export default function QRScanner() {
     const originWithSlash = origin + '/';
     console.log("SCANNED QR:", scannedData);
     console.log("EXPECTED:", expected);
+    console.log("MATCH:", scannedData === expected);
     if (scannedData === expected) {
       try {
         const { count: newCount } = await verifyScan(scannedData);
