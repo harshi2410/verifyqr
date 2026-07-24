@@ -115,34 +115,56 @@
 
 /* CTA Button */
 .landing-login-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
 
-  margin-top: 24px;
-  padding: 14px 34px;
+  width: 100%;
+  max-width: 320px;
 
-  background: transparent;
-  color: #ffffff;
+  margin: 30px auto 0;
+  padding: 16px 24px;
+
+  background: #ffffff;
+  color: #071114;
 
   border: 2px solid #ffffff;
-  border-radius: 12px;
+  border-radius: 14px;
 
   font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  text-decoration: none;
+  letter-spacing: 0.5px;
 
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.18);
+
+  cursor: pointer;
   transition: all 0.25s ease;
 }
 
-.landing-login-btn:hover {
-  background: #ffffff;
-  color: #071114;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(255,255,255,0.18);
+.landing-login-btn::after {
+  content: "→";
+  margin-left: 10px;
+  font-size: 20px;
+  transition: transform 0.25s ease;
 }
 
-.landing-btn:active {
+.landing-login-btn:hover {
+  background: transparent;
+  color: #ffffff;
+
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 12px 30px rgba(255,255,255,0.22),
+    0 0 20px rgba(255,255,255,0.18);
+}
+
+.landing-login-btn:hover::after {
+  transform: translateX(6px);
+}
+
+.landing-login-btn:active {
   transform: translateY(0) scale(0.98);
 }
 

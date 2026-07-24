@@ -40,7 +40,6 @@ export default function QRScanner() {
 
     const scannedData = text.trim().replace(/\/$/, "");
     const expected = process.env.NEXT_PUBLIC_MASTER_QR!.replace(/\/$/, "");
-    const originWithSlash = origin + '/';
     console.log("SCANNED QR:", scannedData);
     console.log("EXPECTED:", expected);
     console.log("MATCH:", scannedData === expected);
